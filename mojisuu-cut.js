@@ -1,15 +1,15 @@
 /**
- * mojisuuCut v1.0
+ * mojisuuCut v1.1
  *
  * Copyright 2018, TeeGuchi
  *
  * Released under the MIT License.
- * http://opensource.org/licenses/mit-license.php
+ * https://github.com/teeguchi/mojisuu-cut/blob/master/LICENSE
  */
 function mojisuuCut(c, n, s, t) {
 	var className = c; // クラスを付ける
 	var mcNumber = n; // カットする文字数を入力
-	/* 省略記号 部分の表示を入力 */
+	/* 省略記号部分の表示を入力 */
 	var strMore = '';
 	if (s == null) {
 		strMore = '...';
@@ -32,9 +32,8 @@ function mojisuuCut(c, n, s, t) {
 
 		/* 文字数を数える関数 */
 		function countMoji(str) {
-			var e_str = escape(str);
-			var zen = Number((e_str.match(/%u/g) || []).length);
-			var strAll = Number(str.length);
+			var zen = (str.match(/[\u0800-\uD7FF]|[\uD800-\uDBFF][\uDC00-\uDFFF]/g) || []).length;
+			var strAll = str.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '*').length;
 			var han = strAll - zen;
 			var hanAll = han + zen * 2;  // すべて半角での数
 			return hanAll;
@@ -48,16 +47,28 @@ function mojisuuCut(c, n, s, t) {
 				var strSlice = mcSource.slice(0,j);
 				var numMoji = countMoji(strSlice);
 				if (numMoji <= mcNumber) {
-					cutMoji = strSlice + strMore;
+					var lastStr = mcSource[j - 1];
+					var beyoStr = mcSource[j];
+					var cutMoji = strSlice;
 				}
 			}
-			mcArray[i].innerHTML = cutMoji; // 制限した文字列を挿入する
-			if ( mcTitle === true) {
+			// サロゲートペアと半角カタカナの処理
+			if (lastStr != undefined && beyoStr != undefined) {
+				if (lastStr.search(/[\uD800-\uDBFF]/) != -1 || beyoStr.search(/[ﾟﾞ]/) != -1) {
+					if (mcNumber % 2 != 0) {
+						cutMoji = cutMoji.slice(0,cutMoji.length - 1);
+					} else {
+						cutMoji += beyoStr;
+					}
+				}
+			}
+			mcArray[i].innerHTML = cutMoji + strMore; // 制限した文字列を挿入する
+			if (mcTitle === true) {
 				mcArray[i].setAttribute('title', mcSource); // title属性を設定する
 			}
 		} else {
 			cutMoji = mcSource;
-			mcArray[i].innerHTML = cutMoji; // 制限した文字列を挿入する
+			mcArray[i].innerHTML = cutMoji + strMore; // 文字列を挿入する
 		}
 	}
 }
